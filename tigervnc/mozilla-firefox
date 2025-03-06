@@ -1,0 +1,11 @@
+Package: firefox
+Pin: release o=LP-PPA-mozillateam
+Pin-Priority: 1001
+
+Package: firefox
+Pin: release o=namespaces/moz-fx-productdelivery-pr-38b5/repositories/mozilla
+Pin-Priority: 1000
+
+Package: firefox
+Pin: version 1:1snap1-0ubuntu2
+Pin-Priority: -1

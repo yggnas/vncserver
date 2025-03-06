@@ -1,0 +1,79 @@
+FROM ubuntu:24.04
+
+ARG DEBIAN_FRONTEND=noninteractive
+ARG USER=ubuntu
+ARG VNCPASSWORD=vncpassword
+
+# Install required packages
+
+RUN apt update && \
+    # install auto-apt-proxy
+    apt -y install --no-install-recommends auto-apt-proxy && auto-apt-proxy && \
+    # upgrade all installed packages
+    apt upgrade -y && \
+    # install required packages
+    apt -y install --no-install-recommends tzdata openssh-server zsh sed curl \
+     vim-tiny passwd sudo locales gpg ca-certificates openssl && \
+    # install xfce4 base
+    apt -y install --no-install-recommends xfce4 xfce4-terminal dbus-x11 && \
+    # install xfce4 extras
+    apt install --no-install-recommends -y elementary-xfce-icon-theme greybird-gtk-theme\
+    desktop-base tango-icon-theme && \
+    # install tigervnc server
+    apt -y install tigervnc-standalone-server
+
+
+# Install Microsoft Edge, Google Chrome, Mozilla Firefox browsers
+
+COPY mozilla-firefox /etc/apt/preferences.d/mozilla-firefox
+
+RUN curl -sS https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/microsoft.gpg && \
+    echo "deb [arch=amd64] https://packages.microsoft.com/repos/edge stable main" >> /etc/apt/sources.list.d/microsoft.list && \
+    curl -sS https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/google.gpg && \
+    echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list && \
+    curl -sS https://packages.mozilla.org/apt/repo-signing-key.gpg | gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/mozilla.gpg && \
+    echo "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/mozilla.gpg] https://packages.mozilla.org/apt mozilla main" >> /etc/apt/sources.list.d/mozilla.list && \
+    apt update && \
+    apt install -y microsoft-edge-stable && \
+    apt install -y google-chrome-stable && \
+    apt install -y firefox && \
+    # set firefox as default
+    update-alternatives --set x-www-browser /usr/bin/firefox && \
+    # cleanup
+    rm -rf /etc/apt/sources.list.d/microsoft.list && rm -rf /etc/apt/sources.list.d/google.list && \
+    rm -rf /etc/apt/trusted.gpg.d/microsoft.gpg && rm -rf /etc/apt/trusted.gpg.d/google.gpg && \
+    rm -rf /tmp/* /var/tmp/*
+
+# Configure user and set vnc password
+
+RUN userdel ubuntu && rm -rf /home/ubuntu && \
+    groupadd ${USER} -g 1000 && \
+    useradd -u 1000 -g 1000 -m -G sudo -d /home/${USER} -c "${USER} " -s /bin/bash ${USER} && \
+    echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/custom && \
+    mkdir /home/${USER}/.vnc/ && \
+    echo "${VNCPASSWORD}" | vncpasswd -f > /home/${USER}/.vnc/passwd && \
+    chmod 600 /home/${USER}/.vnc/passwd && \
+    mkdir /home/${USER}/.ssh/ && \
+    touch /home/${USER}/.ssh/authorized_keys && \
+    chmod 600 /home/${USER}/.ssh/authorized_keys && \
+    chown -R ${USER}:${USER} /home/${USER} && \
+    echo "Hidden=true" >> /etc/xdg/autostart/light-locker.desktop
+
+COPY vnc.sh /home/${USER}/.vnc/
+COPY docker-entrypoint.sh /
+
+RUN chmod +x /home/${USER}/.vnc/vnc.sh && \
+    chmod +x /docker-entrypoint.sh && \
+    touch /var/log/vncserver.log && \
+    chown -R ${USER}:${USER} /var/log/vncserver.log
+
+ENV USER ${USER}
+
+USER ${USER}
+
+WORKDIR /home/${USER}
+
+ENTRYPOINT /docker-entrypoint.sh
+
+EXPOSE 22
+EXPOSE 5901
