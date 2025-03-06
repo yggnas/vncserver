@@ -1,6 +1,7 @@
 # VNC Server based on TigerVNC
 This container image provides a Linux desktop environment to run a browser and other gui based applications.    
-[TigerVNC](https://github.com/TigerVNC/tigervnc) is configured to provide TLS encryption with X509 certificates, use TigerVNC client for best results.
+[TigerVNC](https://github.com/TigerVNC/tigervnc) is configured to provide TLS encryption with X509 certificates, use TigerVNC client for best results.  
+Repo: https://github.com/yggnas/vncserver/tree/main/tigervnc
 
 ## Components
 - OS:              Ubuntu 24.04
